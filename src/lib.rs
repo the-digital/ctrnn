@@ -1,3 +1,4 @@
+pub mod node;
 pub mod activation;
 
 use activation::sigmoid;
@@ -8,22 +9,21 @@ use activation::sigmoid;
 /// ```rust
 /// use ctrnn::CTRNN;
 ///
-/// let mut ctrnn = CTRNN::new(6);
-/// ctrnn.tick();
+/// let mut ctrnn = CTRNN::new(3);
+/// ctrnn.tick(vec![1.0, 0.0, 0.0], 1.0 / 60.0);
 /// ```
 pub struct CTRNN {
     /// Number of nodes in the network
     count: usize,
-    /// Time constant used for conversion from continuous to discrete time
-    time_constant: f64,
-    /// Array of each node's activation
-    nodes: Vec<f64>,
+    /// Array of each node's parameters:
+    /// - `bias`: how stimulated a neuron must be before activating
+    /// - `time_constant`: the excitatory component of a neuron
+    nodes: Vec<node::Node>,
     /// Array of each node's ***input*** weights
     /// e.g. `weights[i][j]` is the weight going from node `j` TO node `i`
     weights: Vec<Vec<f64>>,
-    /// Array of each node's bias
-    /// This can be thought of as how stimulated a neuron must be
-    biases: Vec<f64>,
+    /// Array of each node's activation
+    states: Vec<f64>,
 }
 
 impl CTRNN {
@@ -36,29 +36,64 @@ impl CTRNN {
     ///
     /// let mut ctrnn = CTRNN::new(6);
     /// ```
-    /// > This will create a fully-connected CTRNN with 6 nodes.
+    /// > This will create a fully-connected CTRNN with 6 nodes
     pub fn new(nodes: usize) -> Self {
         Self {
             count: nodes,
-            time_constant: 0.05,
-            nodes: vec![0.0; nodes],
+            nodes: vec![node::Node::default(); nodes],
             weights: vec![vec![0.0; nodes]; nodes],
-            biases: vec![0.0; nodes],
+            states: vec![0.0; nodes],
         }
     }
 
-    /// Adjust the time constant `tau` for the network.
-    /// > Used when converting from continuous time to discrete time.
+    /// Set an individual weight within the network.
+    /// > By default all weights are initialized to `0.0`
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut ctrnn = ctrnn::CTRNN::new(3);
+    /// ctrnn.set_weight(0, 2, 1.0);
+    /// ctrnn.set_weight(1, 2, 1.0);
+    /// ```
+    /// > This will make it so node `2` gets excited from nodes `0` and `1`
+    pub fn set_weight(
+        &mut self,
+        from: usize,
+        to: usize,
+        weight: f64
+    ) -> &mut Self {
+        self.weights[to][from] = weight;
+        self
+    }
+
+    /// Adjust the bias `theta` for a given neuron
+    /// > Can be thought of as how stimulated a neuron must be to activate
     ///
     /// # Example
     ///
     /// ```rust
     /// let mut ctrnn = ctrnn::CTRNN::new(6);
-    /// ctrnn.set_time_constant(0.05);
+    /// ctrnn.set_bias(0, 1.1);
     /// ```
-    /// > This will adjust the `time constant` to a value of `0.05`.
-    pub fn set_time_constant(&mut self, dt: f64) -> &mut Self {
-        self.time_constant = dt;
+    /// > This will cause node `0` to have a slight dampening effect
+    pub fn set_bias(&mut self, node: usize, bias: f64) -> &mut Self {
+        self.nodes[node].bias = bias;
+        self
+    }
+
+    /// Adjust the time constant `tau` for a given neuron
+    /// > Can be thought of as the neuron's excitatory component
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let mut ctrnn = ctrnn::CTRNN::new(6);
+    /// ctrnn.set_time_constant(0, 1.1);
+    /// ```
+    /// > This will cause node `0` to have a slight dampening effect
+    pub fn set_time_constant(&mut self, node: usize, dt: f64) -> &mut Self {
+        self.nodes[node].time_constant = dt;
         self
     }
 
@@ -68,27 +103,27 @@ impl CTRNN {
     /// # Example
     ///
     /// ```rust
-    /// let mut ctrnn = ctrnn::CTRNN::new(6);
-    /// ctrnn.tick();
+    /// let mut ctrnn = ctrnn::CTRNN::new(3);
+    /// ctrnn.tick(vec![1.0, 0.0, 0.0], 1.0 / 60.0);
     /// ```
-    pub fn tick(&mut self) {
-        let dt = self.time_constant;
-        let nodes = self.nodes.clone();
-        self.nodes.clear();
+    pub fn tick(&mut self, inputs: Vec<f64>, dt: f64) {
+        let states = self.states.clone();
+        self.states.clear();
         for i in 0 .. self.count {
-            let weights = self.weights.get(i).unwrap();
+            let weights = &self.weights[i];
+            let postsynaptic = states[i];
             let mut sum: f64 = 0.0;
             for j in 0 .. self.count {
-                let weight = weights.get(j).unwrap();
-                if weight == &0.0 { continue; }
-                let bias = self.biases.get(j).unwrap();
-                let presynaptic = nodes.get(j).unwrap();
+                let weight = weights[j];
+                if weight == 0.0 { continue; }
+                let presynaptic = states[j];
+                let bias = self.nodes[j].bias;
 
                 sum += weight * sigmoid(presynaptic - bias);
             }
 
-            let postsynaptic = nodes.get(i).unwrap();
-            self.nodes.push(postsynaptic + (sum - postsynaptic) / dt);
+            let dy = (sum - postsynaptic + inputs[i]) / self.nodes[i].time_constant;
+            self.states.push(postsynaptic + dy * dt);
         }
     }
 }
@@ -103,6 +138,6 @@ mod ctrnn {
         assert_eq!(ctrnn.count, 6);
         assert_eq!(ctrnn.nodes.len(), 6);
         assert_eq!(ctrnn.weights.len(), 6);
-        assert_eq!(ctrnn.biases.len(), 6);
+        assert_eq!(ctrnn.states.len(), 6);
     }
 }
