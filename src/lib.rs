@@ -42,7 +42,7 @@ impl CTRNN {
             count: nodes,
             nodes: vec![node::Node::default(); nodes],
             weights: vec![vec![0.0; nodes]; nodes],
-            states: vec![0.0; nodes],
+            states: vec![0.5; nodes],
         }
     }
 
@@ -104,27 +104,26 @@ impl CTRNN {
     ///
     /// ```rust
     /// let mut ctrnn = ctrnn::CTRNN::new(3);
-    /// ctrnn.tick(vec![1.0, 0.0, 0.0], 1.0 / 60.0);
+    /// ctrnn.tick(vec![1.0], 1.0 / 60.0);
     /// ```
-    pub fn tick(&mut self, inputs: Vec<f64>, dt: f64) {
-        let states = self.states.clone();
-        self.states.clear();
+    pub fn tick(&mut self, inputs: Vec<f64>, dt: f64) -> &mut Self {
+        let mut states: Vec<f64> = Vec::new();
         for i in 0 .. self.count {
-            let weights = &self.weights[i];
-            let postsynaptic = states[i];
-            let mut sum: f64 = 0.0;
-            for j in 0 .. self.count {
-                let weight = weights[j];
-                if weight == 0.0 { continue; }
-                let presynaptic = states[j];
-                let bias = self.nodes[j].bias;
-
-                sum += weight * sigmoid(presynaptic - bias);
-            }
-
-            let dy = (sum - postsynaptic + inputs[i]) / self.nodes[i].time_constant;
-            self.states.push(postsynaptic + dy * dt);
+            if i < inputs.len() { states.push(inputs[i]) }
+            else { states.push(self.states[i] + self.get_delta(i) * dt) }
         }
+        self.states.clear();
+        self.states.append(&mut states);
+        self
+    }
+
+    fn get_delta(&self, index: usize) -> f64 {
+        let sum = self.weights[index].iter().zip(self.states.iter())
+            .map(|a| a.0 * a.1)
+            .reduce(|a, b| a + b)
+            .unwrap_or(0.0);
+        let lhs = sigmoid(sum - self.nodes[index].bias) - self.states[index];
+        lhs / self.nodes[index].time_constant
     }
 }
 
