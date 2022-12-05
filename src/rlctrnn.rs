@@ -93,8 +93,8 @@ impl RLCTRNN {
             .collect()
     }
 
-    pub fn get_outputs(&self, voltages: Vec<f64>) -> Vec<f64> {
-        (0..self.count).map(|i| voltages[i] + self.biases[i].get()).collect()
+    pub fn get_outputs(&self, voltages: &Vec<f64>) -> Vec<f64> {
+        (0..self.count).map(|i| sigmoid(voltages[i] + self.biases[i].get())).collect()
     }
 
     pub fn init_voltage(&self) -> Vec<f64> {
