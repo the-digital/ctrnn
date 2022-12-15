@@ -17,10 +17,12 @@ pub struct Fluctuator {
 
 impl Fluctuator {
     pub fn new(center: f64) -> Self {
-        Self {
+        let mut flux = Self {
             center,
             ..Default::default()
-        }
+        };
+        flux.randomize_period();
+        flux
     }
 
     pub fn get(&self) -> f64 {
