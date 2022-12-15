@@ -87,7 +87,7 @@ impl RLCTRNN {
         self
     }
 
-    pub fn update(&mut self, dt: f64, voltages: Vec<f64>, inputs: Vec<f64>) -> Vec<f64> {
+    pub fn update(&mut self, dt: f64, voltages: &Vec<f64>, inputs: Vec<f64>) -> Vec<f64> {
         (0..self.count)
             .map(|i| voltages[i] + self.get_delta(&voltages, i) * dt + inputs.get(i).unwrap_or(&0.0))
             .collect()
