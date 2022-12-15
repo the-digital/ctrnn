@@ -84,6 +84,15 @@ impl RLCTRNN {
     }
 
     pub fn add_node(&mut self) -> &mut Self {
+        self.biases.push(Fluctuator::new(0.0));
+        self.time_constants.push(Fluctuator::new(1.0));
+        let mut weights = vec![Fluctuator::new(0.0)];
+        for i in 0..self.count {
+            self.weights[i].push(Fluctuator::new(0.0));
+            weights.push(Fluctuator::new(0.0));
+        }
+        self.weights.push(weights);
+        self.count += 1;
         self
     }
 
