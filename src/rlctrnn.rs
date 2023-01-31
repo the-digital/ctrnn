@@ -87,6 +87,7 @@ impl RLCTRNN {
         fn flux(center: f64, amplitude: f64) -> Fluctuator {
             let mut f = Fluctuator::new(center);
             f.amplitude = amplitude;
+            f.range_period.start = 6.0;
             f
         }
         self.biases.push(flux(0.0, 0.0));
