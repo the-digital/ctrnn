@@ -81,6 +81,6 @@ trait Clamp<T> {
 
 impl Clamp<f64> for Range<f64> {
     fn clamp(&self, value: f64) -> f64 {
-        self.start.min(self.end.max(value))
+        self.start.max(self.end.min(value))
     }
 }
