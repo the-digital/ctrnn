@@ -1,10 +1,10 @@
 use crate::{fluctuator::Fluctuator, activation::sigmoid};
 
 pub struct RLCTRNN {
-    count: usize,
-    biases: Vec<Fluctuator>,
-    time_constants: Vec<Fluctuator>,
-    weights: Vec<Vec<Fluctuator>>
+    pub count: usize,
+    pub biases: Vec<Fluctuator>,
+    pub time_constants: Vec<Fluctuator>,
+    pub weights: Vec<Vec<Fluctuator>>
 }
 
 impl RLCTRNN {
@@ -84,12 +84,17 @@ impl RLCTRNN {
     }
 
     pub fn add_node(&mut self) -> &mut Self {
-        self.biases.push(Fluctuator::new(0.0));
-        self.time_constants.push(Fluctuator::new(1.0));
-        let mut weights = vec![Fluctuator::new(0.0)];
+        fn flux(center: f64, amplitude: f64) -> Fluctuator {
+            let mut f = Fluctuator::new(center);
+            f.amplitude = amplitude;
+            f
+        }
+        self.biases.push(flux(0.0, 0.0));
+        self.time_constants.push(flux(1.0, 0.0));
+        let mut weights = vec![flux(0.0, 1.0)];
         for i in 0..self.count {
-            self.weights[i].push(Fluctuator::new(0.0));
-            weights.push(Fluctuator::new(0.0));
+            self.weights[i].push(flux(0.0, 1.0));
+            weights.push(flux(0.0, 1.0));
         }
         self.weights.push(weights);
         self.count += 1;
