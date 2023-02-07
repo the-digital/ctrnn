@@ -62,7 +62,7 @@ impl Default for Fluctuator {
             amplitude: 0.0,
             time: 0.0,
             convergence_rate: 0.1,
-            learning_rate: 1.0,
+            learning_rate: 0.1,
         }
     }
 }
