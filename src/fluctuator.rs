@@ -1,4 +1,5 @@
 use std::{ops::Range, f64::consts::PI};
+use rand::prelude::*;
 
 #[derive(Clone)]
 pub struct Fluctuator {
@@ -32,7 +33,8 @@ impl Fluctuator {
 
     fn randomize_period(&mut self) {
         let diff = self.range_period.end - self.range_period.start;
-        let p = self.range_period.start + diff * 0.0;
+        let mut rng = rand::thread_rng();
+        let p = self.range_period.start + diff * rng.gen::<f64>();
         self.period = (p * 10.0).floor() / 10.0;
         self.time = 0.0;
     }
